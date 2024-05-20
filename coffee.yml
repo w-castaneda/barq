@@ -1,0 +1,9 @@
+---
+plugin:
+  name: barq
+  version: 0.0.1
+  lang: rust
+  install: |
+    make release
+  main: 
+    target/release/barq-plugin

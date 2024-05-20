@@ -6,10 +6,9 @@ version = 3
 name = "barq-common"
 version = "0.1.0"
 dependencies = [
- "clightningrpc",
- "clightningrpc-common 0.3.0-beta.4 (git+https://github.com/laanwj/cln4rust.git)",
- "clightningrpc-plugin 0.3.0-beta.8 (git+https://github.com/laanwj/cln4rust.git)",
- "clightningrpc-plugin-macros",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -17,6 +16,10 @@ name = "barq-plugin"
 version = "0.1.0"
 dependencies = [
  "barq-common",
+ "clightningrpc",
+ "clightningrpc-common 0.3.0-beta.4 (git+https://github.com/laanwj/cln4rust.git)",
+ "clightningrpc-plugin 0.3.0-beta.8 (git+https://github.com/laanwj/cln4rust.git)",
+ "clightningrpc-plugin-macros",
 ]
 
 [[package]]

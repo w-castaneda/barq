@@ -1,5 +1,5 @@
-mod dijkstra;
-mod direct;
+pub mod dijkstra;
+pub mod direct;
 
 use super::strategy::Strategy;
 

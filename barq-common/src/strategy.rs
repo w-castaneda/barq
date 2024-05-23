@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 /// This trait encapsulates the core logic for finding a payment route based on a specific routing algorithm.
 /// Implementations of this trait are responsible for processing `RouteInput` and producing `RouteOutput`.
 pub trait Strategy {
+    /// Whether the strategy can be applied to the given input
+    fn can_apply(&self, input: &RouteInput) -> bool;
+
     /// Route the payment using the strategy
     fn route(&self, input: &RouteInput) -> RouteOutput;
 }
@@ -38,20 +41,23 @@ pub struct RouteOutput {
 pub struct Router {
     /// A collection of routing strategies that can be used to route payments
     pub strategies: Vec<Box<dyn Strategy>>,
+    // FIXME: Should we have a database here to store routing information?
 }
 
 impl Router {
     /// Create a new `Router` instance with the provided strategies
     pub fn new(strategies: Vec<Box<dyn Strategy>>) -> Self {
+        // FIXME: Should `strategies` be optional?
+        //        The default could be all strategies available
         Router { strategies }
     }
 
     /// Execute the routing process using the best strategy based on input
     pub fn execute(&self, input: &RouteInput) -> RouteOutput {
         // TODO: For now, we only allow using one strategy for the whole payment
-        // Later, we can implement a more complex logic to select the best strategy
-        // where we can use multiple strategies for different parts of the payment
-        // and get the result
+        //       Later, we can implement a more complex logic to select the best strategy
+        //       where we can use multiple strategies for different parts of the payment
+        //       and get the result
         let strategy = self.select_best_strategy(input);
         strategy.route(input)
     }
@@ -59,6 +65,7 @@ impl Router {
     /// Select the best strategy based on input
     fn select_best_strategy(&self, input: &RouteInput) -> &Box<dyn Strategy> {
         // TODO: Implement logic to select the best strategy based on input
+        //       and whether the strategy can be applied to the input
 
         // For now, we will just use the first strategy as a placeholder
         self.strategies.first().expect("No strategies available")

@@ -9,6 +9,12 @@ impl Direct {
 }
 
 impl Strategy for Direct {
+    fn can_apply(&self, _input: &RouteInput) -> bool {
+        // TODO: Implement the logic to check if the strategy can be applied to the given input
+
+        true
+    }
+
     fn route(&self, input: &RouteInput) -> RouteOutput {
         // TODO: Implement the routing logic
 

@@ -1,0 +1,58 @@
+use serde::{Deserialize, Serialize};
+use serde_json as json;
+use serde_json::Value;
+
+use clightningrpc_plugin::{error, errors::PluginError, plugin::Plugin};
+
+use crate::plugin::State;
+
+/// Request payload for Barq pay RPC method
+#[derive(Deserialize, Serialize)]
+pub struct BarqPayRequest {
+    pub payment_hash: String,
+    pub amount: u64,
+    pub destination: String,
+    // TODO: Add more fields as needed
+}
+
+/// Response payload for Barq pay RPC method
+#[derive(Deserialize, Serialize)]
+pub struct BarqPayResponse {
+    pub status: String,
+    pub message: String,
+    pub route: String,
+    // TODO: Add more fields as needed
+}
+
+/// Barq RPC method to execute a payment
+pub fn barq_pay(plugin: &mut Plugin<State>, request: Value) -> Result<Value, PluginError> {
+    log::info!("barqpay called with request: {}", request);
+    let request: BarqPayRequest = json::from_value(request).map_err(|err| error!("{err}"))?;
+
+    // TODO: Implement the logic to execute a payment using Barq strategies
+    let state = &plugin.state;
+    let router = state.router();
+
+    // TODO: use CLN RPC to query any information needed
+    let cln_response = state
+        .call("getinfo", ())
+        .map_err(|err| error!("Error calling CLN RPC method: {err}"))?;
+
+    // TODO: Constrcut `RouteInput` from the request and CLN information gathered
+    let input = barq_common::strategy::RouteInput {
+        source: request.payment_hash.clone(),
+        destination: request.destination.clone(),
+        amount: request.amount,
+    };
+
+    // Execute the routing process
+    let output = router.execute(&input);
+
+    // Construct the response from the output
+    let response = BarqPayResponse {
+        status: "success".to_string(),
+        message: "Payment executed successfully".to_string(),
+        route: output.path.join(" -> "),
+    };
+    Ok(json::to_value(response)?)
+}

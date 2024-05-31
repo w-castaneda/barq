@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::graph::NetworkGraph;
+
 /// The `Strategy` trait defines an interface for routing strategies used within Barq.
 ///
 /// This trait encapsulates the core logic for finding a payment route based on a specific routing algorithm.
@@ -18,6 +20,7 @@ pub struct RouteInput {
     pub source: String,
     pub destination: String,
     pub amount: u64,
+    pub graph: NetworkGraph,
     // TODO: Add more fields as needed
 }
 

@@ -1,4 +1,7 @@
-use crate::strategy::{RouteInput, RouteOutput, Strategy};
+use crate::{
+    graph::NetworkGraph,
+    strategy::{RouteInput, RouteOutput, Strategy},
+};
 
 pub struct Dijkstra;
 
@@ -37,6 +40,7 @@ mod tests {
             source: "A".to_string(),
             destination: "B".to_string(),
             amount: 100,
+            graph: NetworkGraph::new(),
         };
         let output = router.execute(&input);
         assert_eq!(output.path, vec!["A", "B"]);

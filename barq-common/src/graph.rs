@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use petgraph::{
+    dot::{Config, Dot},
+    graph::{DiGraph, NodeIndex},
+};
+
 /// Represents a node in the network graph.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Node {
@@ -113,6 +118,25 @@ impl NetworkGraph {
 
     // TODO: Add methods for updating nodes and edges.
     // TODO: Add methods for removing nodes and edges.
+
+    /// Returns a DOT representation of the network graph.
+    pub fn to_dot(&self) -> String {
+        let mut graph = DiGraph::new();
+        let mut node_indices: HashMap<String, NodeIndex> = HashMap::new();
+
+        for node in self.nodes.values() {
+            let node_index = graph.add_node(node.id.clone());
+            node_indices.insert(node.id.clone(), node_index);
+        }
+
+        for edge in self.edges.values() {
+            let source_index = node_indices.get(&edge.source).unwrap();
+            let destination_index = node_indices.get(&edge.destination).unwrap();
+            graph.add_edge(*source_index, *destination_index, edge.capacity);
+        }
+
+        format!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]))
+    }
 }
 
 #[cfg(test)]

@@ -137,7 +137,7 @@ impl Strategy for Dijkstra {
         let mut path: Vec<RouteHop> = Vec::<RouteHop>::new();
         let mut total_amt: u64 = input.amount_msat;
         let mut total_delay: u64 = 9;
-        for route in route_path.iter().rev() {
+        for route in route_path.iter().take(route_path.len() - 1) {
             total_amt += route.fee;
             total_delay += route.delay;
         }

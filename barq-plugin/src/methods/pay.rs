@@ -1,12 +1,17 @@
-use crate::{methods::utils::graph::build_network_graph, plugin::State};
-use barq_common::strategy::RouteInput;
-use clightningrpc_plugin::{error, errors::PluginError, plugin::Plugin};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 
-/// Response from 'sendpay' RPC command of core lightning
+use clightningrpc_plugin::{error, errors::PluginError, plugin::Plugin};
+
+use barq_common::strategy::RouteInput;
+
+use crate::{methods::utils::graph::build_network_graph, plugin::State};
+
+/// Response from `sendpay` RPC command of Core Lightning
+///
+/// See: https://docs.corelightning.org/reference/lightning-sendpay#return-value
 #[derive(Deserialize, Debug, Serialize)]
-pub struct PaymentResponse {
+pub struct CLNSendpayResponse {
     id: u64,
     created_index: u64,
     payment_hash: String,
@@ -18,6 +23,7 @@ pub struct PaymentResponse {
     status: Status,
 }
 
+/// Status of the payment
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum Status {
@@ -28,19 +34,20 @@ enum Status {
 /// Request payload for Barq pay RPC method
 #[derive(Deserialize, Serialize)]
 pub struct BarqPayRequest {
-    pub bolt11_invoice: String, // TODO: Add more fields as needed
+    pub bolt11_invoice: String,
 }
 
 /// Response payload for Barq pay RPC method
 #[derive(Deserialize, Serialize)]
 pub struct BarqPayResponse {
+    pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub response: Option<PaymentResponse>,
-    pub message: String,
-    // TODO: Add more fields as needed
+    pub message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response: Option<CLNSendpayResponse>,
 }
 
-/// information corresponding to a lightning pay request
+/// Bolt11 invoice information
 #[derive(Deserialize, Debug)]
 struct Bolt11 {
     payee: String,
@@ -50,7 +57,7 @@ struct Bolt11 {
     payment_secret: String,
 }
 
-/// information corresponding to current lightning node
+/// Node information
 #[derive(Debug, Deserialize)]
 pub struct NodeInfo {
     pub id: String,
@@ -64,7 +71,6 @@ pub fn barq_pay(
     log::info!("barqpay called with request: {}", request);
     let request: BarqPayRequest = json::from_value(request).map_err(|err| error!("{err}"))?;
 
-    // TODO: Implement the logic to execute a payment using Barq strategies
     let state = &plugin.state;
     let router = state.router();
 
@@ -77,7 +83,6 @@ pub fn barq_pay(
         )
         .map_err(|err| error!("Error calling CLN RPC method: {err}"))?;
 
-    // // TODO: use CLN RPC to query any information needed
     let node_info: NodeInfo = state
         .call("getinfo", serde_json::json!({}))
         .map_err(|err| error!("Error calling CLN RPC method: {err}"))?;
@@ -85,7 +90,6 @@ pub fn barq_pay(
     // Build the network graph from the plugin state
     let network_graph = build_network_graph(state)?;
 
-    // TODO: Constrcut `RouteInput` from the request and CLN information gathered
     let input = RouteInput {
         src_pubkey: node_info.id.clone(),
         dest_pubkey: b11.payee.clone(),
@@ -104,7 +108,7 @@ pub fn barq_pay(
                 "payment_secret": b11.payment_secret
             });
 
-            let sendpay_response: PaymentResponse = state
+            let sendpay_response: CLNSendpayResponse = state
                 .call("sendpay", sendpay_request)
                 .map_err(|err| error!("Error calling sendpay method: {err}"))?;
 
@@ -112,19 +116,21 @@ pub fn barq_pay(
                 "payment_hash": sendpay_response.payment_hash.clone()
             });
 
-            let waitsendpay_response: PaymentResponse = state
+            let waitsendpay_response: CLNSendpayResponse = state
                 .call("waitsendpay", waitsendpay_request)
                 .map_err(|err| error!("Error calling waitsendpay method: {err}"))?;
 
             // Construct the response from the output
             BarqPayResponse {
+                status: "success".to_string(),
+                message: None,
                 response: Some(waitsendpay_response),
-                message: "barqpay executed successfully".to_string(),
             }
         }
         Err(err) => BarqPayResponse {
+            status: "failure".to_string(),
+            message: Some(format!("barqpay execution failed: {}", err)),
             response: None,
-            message: format!("barqpay execution failed: {}", err),
         },
     };
 

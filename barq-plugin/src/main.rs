@@ -1,7 +1,7 @@
+use anyhow::Result;
+
 mod methods;
 mod plugin;
-
-use anyhow::Result;
 
 /// Main entry point for Barq
 fn main() -> Result<()> {

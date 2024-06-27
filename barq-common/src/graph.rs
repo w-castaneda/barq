@@ -1,10 +1,11 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use anyhow::Result;
 use petgraph::{
     dot::{Config, Dot},
     graph::{DiGraph, NodeIndex},
 };
+use serde::{Deserialize, Serialize};
 
 /// Represents a node in the network graph.
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -12,7 +13,6 @@ pub struct Node {
     pub id: String,
     pub alias: Option<String>,
     pub channels: Vec<String>,
-    // TODO: Add more fields as needed, such as node capabilities, features, etc.
 }
 
 impl Node {
@@ -46,7 +46,6 @@ pub struct Edge {
     pub delay: u64,
     pub base_fee_millisatoshi: u64,
     pub fee_per_millionth: u64,
-    // TODO: Add more fields as needed, such as fees, channel policies, etc.
 }
 
 impl Edge {
@@ -137,7 +136,7 @@ impl NetworkGraph {
     // TODO: Add methods for removing nodes and edges.
 
     /// Returns a DOT representation of the network graph.
-    pub fn to_dot(&self) -> String {
+    pub fn to_dot(&self) -> Result<String> {
         let mut graph = DiGraph::new();
         let mut node_indices: HashMap<String, NodeIndex> = HashMap::new();
 
@@ -147,12 +146,19 @@ impl NetworkGraph {
         }
 
         for edge in self.edges.values() {
-            let source_index = node_indices.get(&edge.node1).unwrap();
-            let destination_index = node_indices.get(&edge.node2).unwrap();
+            let source_index = node_indices.get(&edge.node1).ok_or_else(|| {
+                anyhow::anyhow!("Failed to get node index for node {}", edge.node1)
+            })?;
+            let destination_index = node_indices.get(&edge.node2).ok_or_else(|| {
+                anyhow::anyhow!("Failed to get node index for node {}", edge.node2)
+            })?;
             graph.add_edge(*source_index, *destination_index, edge.capacity);
         }
 
-        format!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]))
+        Ok(format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::EdgeNoLabel])
+        ))
     }
 }
 

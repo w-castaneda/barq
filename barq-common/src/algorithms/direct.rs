@@ -1,16 +1,14 @@
-use crate::{
-    graph::NetworkGraph,
-    strategy::{RouteHop, RouteInput, RouteOutput, Strategy},
-};
-use std::collections::HashMap;
+use anyhow::Result;
 
+use crate::strategy::{RouteHop, RouteInput, RouteOutput, Strategy};
+
+/// A routing strategy that attempts to find a direct route from the source to
+/// the destination.
+///
+/// The `Direct` strategy checks if the destination node is directly connected
+/// to the source node through any of the channels. If such a direct connection
+/// exists, it constructs a route with that single hop.
 pub struct Direct;
-
-impl Default for Direct {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl Direct {
     pub fn new() -> Self {
@@ -18,28 +16,36 @@ impl Direct {
     }
 }
 
-impl Strategy for Direct {
-    fn can_apply(&self, input: &RouteInput) -> bool {
-        // TODO: Implement the logic to check if the strategy can be applied to the given input
-        let source = input.src_pubkey.clone();
-        let node = input.graph.get_node(&source).expect("Error is strategy.rs");
-
-        for channel in &node.channels {
-            let edge = input.graph.get_edge(channel).expect("Error in strategy.rs");
-            if input.dest_pubkey == edge.node1.clone() || input.dest_pubkey == edge.node2 {
-                return true;
-            }
-        }
-        true
+impl Default for Direct {
+    fn default() -> Self {
+        Direct::new()
     }
+}
 
-    fn route(&self, input: &RouteInput) -> Result<RouteOutput, String> {
-        // TODO: Implement the routing logic
+impl Strategy for Direct {
+    fn can_apply(&self, input: &RouteInput) -> Result<bool> {
         let source = input.src_pubkey.clone();
         let node = input
             .graph
             .get_node(&source)
-            .ok_or_else(|| format!("Cannot retrieve node for id {}", &source))?;
+            .ok_or_else(|| anyhow::anyhow!("Failed to retrieve node from graph"))?;
+
+        // Check if the destination is directly connected to the source
+        for channel in &node.channels {
+            let edge = input.graph.get_edge(channel).expect("Error in strategy.rs");
+            if input.dest_pubkey == edge.node1.clone() || input.dest_pubkey == edge.node2 {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    fn route(&self, input: &RouteInput) -> Result<RouteOutput> {
+        let source = input.src_pubkey.clone();
+        let node = input
+            .graph
+            .get_node(&source)
+            .ok_or_else(|| anyhow::anyhow!("Failed to retrieve node from graph"))?;
 
         let mut path: Vec<RouteHop> = Vec::<RouteHop>::new();
 
@@ -47,9 +53,10 @@ impl Strategy for Direct {
             let edge = input
                 .graph
                 .get_edge(channel)
-                .ok_or_else(|| format!("Error retrieving edge for channel {}", channel))?;
+                .ok_or_else(|| anyhow::anyhow!("Error retrieving edge for channel {}", channel))?;
 
             if input.dest_pubkey == edge.node1.clone() || input.dest_pubkey == edge.node2.clone() {
+                // By default, the delay (total CLTV) for the last node is 9
                 let delay = 9;
                 let hop = RouteHop::new(
                     input.dest_pubkey.clone(),
@@ -61,7 +68,7 @@ impl Strategy for Direct {
             }
         }
 
-        Ok(RouteOutput { path: path })
+        Ok(RouteOutput { path })
     }
 }
 
@@ -69,7 +76,7 @@ impl Strategy for Direct {
 mod tests {
     use super::*;
     use crate::{
-        graph::{Edge, Node},
+        graph::{Edge, NetworkGraph, Node},
         strategy::Router,
     };
 
@@ -79,8 +86,7 @@ mod tests {
         graph.add_node(Node::new("A"));
         graph.add_node(Node::new("B"));
         graph.add_edge(Edge::new("channel", "A", "B", 100, 6, 1, 10));
-        let mut strategies: Vec<Box<dyn Strategy>> = Vec::new();
-        strategies.push(Box::new(Direct::new()));
+        let strategies: Vec<Box<dyn Strategy>> = vec![Box::new(Direct::new())];
         let router = Router::new(strategies);
         let input = RouteInput {
             src_pubkey: "A".to_string(),
@@ -94,6 +100,5 @@ mod tests {
         let hop = RouteHop::new("B".to_string(), "channel".to_string(), 9, 100);
         route_path.push(hop);
         assert_eq!(output.path, route_path);
-        // TODO: complete writing tests
     }
 }

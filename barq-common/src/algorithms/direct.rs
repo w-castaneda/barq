@@ -2,6 +2,8 @@ use anyhow::Result;
 
 use crate::strategy::{RouteHop, RouteInput, RouteOutput, Strategy};
 
+const DEFAULT_DELAY: u64 = 9;
+
 /// A routing strategy that attempts to find a direct route from the source to
 /// the destination.
 ///
@@ -23,23 +25,31 @@ impl Default for Direct {
 }
 
 impl Strategy for Direct {
+    /// Determines if the Direct routing strategy can be applied to the given
+    /// input.
+    ///
+    /// This method checks if the destination node is directly connected to the
+    /// source node within the network graph.
     fn can_apply(&self, input: &RouteInput) -> Result<bool> {
         let source = input.src_pubkey.clone();
         let node = input
             .graph
             .get_node(&source)
-            .ok_or_else(|| anyhow::anyhow!("Failed to retrieve node from graph"))?;
+            .ok_or_else(|| anyhow::anyhow!("Failed to retrieve source node from graph"))?;
 
         // Check if the destination is directly connected to the source
         for channel in &node.channels {
-            let edge = input.graph.get_edge(channel).expect("Error in strategy.rs");
-            if input.dest_pubkey == edge.node1.clone() || input.dest_pubkey == edge.node2 {
+            if channel.node1 == input.dest_pubkey || channel.node2 == input.dest_pubkey {
                 return Ok(true);
             }
         }
         Ok(false)
     }
 
+    /// Routes the payment directly from the source to the destination node.
+    ///
+    /// This method constructs a route with a single hop if a direct connection
+    /// exists between the source and destination nodes.
     fn route(&self, input: &RouteInput) -> Result<RouteOutput> {
         let source = input.src_pubkey.clone();
         let node = input
@@ -49,19 +59,12 @@ impl Strategy for Direct {
 
         let mut path: Vec<RouteHop> = Vec::<RouteHop>::new();
 
-        for channel in &node.channels {
-            let edge = input
-                .graph
-                .get_edge(channel)
-                .ok_or_else(|| anyhow::anyhow!("Error retrieving edge for channel {}", channel))?;
-
+        for edge in &node.channels {
             if input.dest_pubkey == edge.node1.clone() || input.dest_pubkey == edge.node2.clone() {
-                // By default, the delay (total CLTV) for the last node is 9
-                let delay = 9;
                 let hop = RouteHop::new(
                     input.dest_pubkey.clone(),
-                    channel.clone(),
-                    delay,
+                    edge.id.clone(),
+                    DEFAULT_DELAY,
                     input.amount_msat,
                 );
                 path.push(hop);
@@ -97,7 +100,8 @@ mod tests {
         };
         let output = router.execute(&input).expect("Direct Routing Failed");
         let mut route_path: Vec<RouteHop> = Vec::<RouteHop>::new();
-        let hop = RouteHop::new("B".to_string(), "channel".to_string(), 9, 100);
+        let edge = Edge::new("channel", "A", "B", 100, 6, 1, 10);
+        let hop = RouteHop::new("B".to_string(), edge.id, 9, 100);
         route_path.push(hop);
         assert_eq!(output.path, route_path);
     }

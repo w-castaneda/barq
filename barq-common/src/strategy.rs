@@ -18,32 +18,7 @@ pub trait Strategy {
     fn route(&self, input: &RouteInput) -> Result<RouteOutput>;
 }
 
-/// Represents a route between two nodes directly connected with each other.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Route {
-    pub id: String,
-    pub channel: String,
-    pub delay: u64,
-    pub fee: u64,
-}
-
-impl Route {
-    /// Create a new `Route` instance with the provided fields
-    pub fn new(id: String, channel: String, delay: u64, fee: u64) -> Self {
-        Route {
-            id,
-            channel,
-            delay,
-            fee,
-        }
-    }
-}
-
-/// Represents a single hop in a route between two nodes.
-///
-/// The difference between `Route` and `RouteHop` is that `Route` stores the
-/// delay and fee for the corresponding channel, while `RouteHop` stores the
-/// total delay and total amount to be sent corresponding to that channel.
+/// Represents a single hop in a route between two nodes
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RouteHop {
     pub id: String,

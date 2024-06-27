@@ -7,8 +7,6 @@ edition = "2021"
 [dependencies]
 # General dependencies
 serde = { workspace = true }
-serde_json = { workspace = true }
-log = { workspace = true }
 anyhow = { workspace = true }
 
 # Dependencies to visualize the graph

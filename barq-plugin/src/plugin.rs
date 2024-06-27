@@ -9,7 +9,7 @@ use clightningrpc_plugin::{commands::RPCCommand, errors::PluginError, plugin::Pl
 use clightningrpc_plugin_macros::{plugin, rpc_method};
 
 use barq_common::{
-    algorithms::{dijkstra::Dijkstra, direct::Direct},
+    algorithms::direct::Direct,
     strategy::{Router, Strategy},
 };
 
@@ -78,7 +78,7 @@ fn on_init(plugin: &mut Plugin<State>) -> Value {
     let config = plugin.configuration.clone().unwrap();
     let rpc_file = format!("{}/{}", config.lightning_dir, config.rpc_file);
 
-    let strategies: Vec<Box<dyn Strategy>> = vec![Box::new(Direct), Box::new(Dijkstra)];
+    let strategies: Vec<Box<dyn Strategy>> = vec![Box::new(Direct)];
 
     #[allow(clippy::arc_with_non_send_sync)]
     let shared_router = Arc::new(Router::new(strategies));

@@ -8,11 +8,11 @@ use petgraph::{
 use serde::{Deserialize, Serialize};
 
 /// Represents a node in the network graph.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Node {
     pub id: String,
     pub alias: Option<String>,
-    pub channels: Vec<String>,
+    pub channels: Vec<Edge>,
 }
 
 impl Node {
@@ -31,13 +31,13 @@ impl Node {
     }
 
     /// Adds a channel to the node.
-    pub fn add_channel(&mut self, channel_id: &str) {
-        self.channels.push(channel_id.to_string());
+    pub fn add_channel(&mut self, channel: &Edge) {
+        self.channels.push(channel.clone());
     }
 }
 
 /// Represents an edge (channel) between two nodes in the network graph.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub id: String,
     pub node1: String,
@@ -106,10 +106,8 @@ impl NetworkGraph {
     /// Adds an edge (channel) to the network graph.
     pub fn add_edge(&mut self, edge: Edge) {
         self.edges.insert(edge.id.clone(), edge.clone());
-        // Update the nodes to include this channel.
-        if let Some(source_node) = self.nodes.get_mut(&edge.clone().node1) {
-            source_node.add_channel(&edge.id);
-        }
+        self.nodes.get_mut(&edge.node1).unwrap().add_channel(&edge);
+        self.nodes.get_mut(&edge.node2).unwrap().add_channel(&edge);
     }
 
     /// Gets a reference to a node by its ID.
@@ -184,9 +182,9 @@ mod tests {
     #[test]
     fn test_add_channel_to_node() {
         let mut node = Node::new("node1");
-        node.add_channel("channel1");
+        let edge = Edge::new("channel1", "node1", "node2", 1000, 6, 1, 10);
+        node.add_channel(&edge);
         assert_eq!(node.channels.len(), 1);
-        assert_eq!(node.channels[0], "channel1");
     }
 
     #[test]
@@ -223,10 +221,6 @@ mod tests {
         graph.add_edge(edge);
 
         assert!(graph.get_edge("channel1").is_some());
-        assert!(graph
-            .get_node("node1")
-            .unwrap()
-            .channels
-            .contains(&"channel1".to_string()));
+        assert_eq!(graph.get_node("node1").unwrap().channels.len(), 1);
     }
 }

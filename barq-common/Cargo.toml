@@ -6,9 +6,8 @@ edition = "2021"
 
 [dependencies]
 # General dependencies
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-log = "0.4"
+serde = { workspace = true }
+anyhow = { workspace = true }
 
 # Dependencies to visualize the graph
 petgraph = "0.6"

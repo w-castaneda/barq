@@ -1,18 +1,18 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use anyhow::Result;
 use petgraph::{
     dot::{Config, Dot},
     graph::{DiGraph, NodeIndex},
 };
+use serde::{Deserialize, Serialize};
 
 /// Represents a node in the network graph.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Node {
     pub id: String,
     pub alias: Option<String>,
-    pub channels: Vec<String>,
-    // TODO: Add more fields as needed, such as node capabilities, features, etc.
+    pub channels: Vec<Edge>,
 }
 
 impl Node {
@@ -31,13 +31,13 @@ impl Node {
     }
 
     /// Adds a channel to the node.
-    pub fn add_channel(&mut self, channel_id: &str) {
-        self.channels.push(channel_id.to_string());
+    pub fn add_channel(&mut self, channel: &Edge) {
+        self.channels.push(channel.clone());
     }
 }
 
 /// Represents an edge (channel) between two nodes in the network graph.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub id: String,
     pub node1: String,
@@ -46,7 +46,6 @@ pub struct Edge {
     pub delay: u64,
     pub base_fee_millisatoshi: u64,
     pub fee_per_millionth: u64,
-    // TODO: Add more fields as needed, such as fees, channel policies, etc.
 }
 
 impl Edge {
@@ -107,10 +106,8 @@ impl NetworkGraph {
     /// Adds an edge (channel) to the network graph.
     pub fn add_edge(&mut self, edge: Edge) {
         self.edges.insert(edge.id.clone(), edge.clone());
-        // Update the nodes to include this channel.
-        if let Some(source_node) = self.nodes.get_mut(&edge.clone().node1) {
-            source_node.add_channel(&edge.id);
-        }
+        self.nodes.get_mut(&edge.node1).unwrap().add_channel(&edge);
+        self.nodes.get_mut(&edge.node2).unwrap().add_channel(&edge);
     }
 
     /// Gets a reference to a node by its ID.
@@ -137,7 +134,7 @@ impl NetworkGraph {
     // TODO: Add methods for removing nodes and edges.
 
     /// Returns a DOT representation of the network graph.
-    pub fn to_dot(&self) -> String {
+    pub fn to_dot(&self) -> Result<String> {
         let mut graph = DiGraph::new();
         let mut node_indices: HashMap<String, NodeIndex> = HashMap::new();
 
@@ -147,12 +144,19 @@ impl NetworkGraph {
         }
 
         for edge in self.edges.values() {
-            let source_index = node_indices.get(&edge.node1).unwrap();
-            let destination_index = node_indices.get(&edge.node2).unwrap();
+            let source_index = node_indices.get(&edge.node1).ok_or_else(|| {
+                anyhow::anyhow!("Failed to get node index for node {}", edge.node1)
+            })?;
+            let destination_index = node_indices.get(&edge.node2).ok_or_else(|| {
+                anyhow::anyhow!("Failed to get node index for node {}", edge.node2)
+            })?;
             graph.add_edge(*source_index, *destination_index, edge.capacity);
         }
 
-        format!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]))
+        Ok(format!(
+            "{:?}",
+            Dot::with_config(&graph, &[Config::EdgeNoLabel])
+        ))
     }
 }
 
@@ -178,9 +182,9 @@ mod tests {
     #[test]
     fn test_add_channel_to_node() {
         let mut node = Node::new("node1");
-        node.add_channel("channel1");
+        let edge = Edge::new("channel1", "node1", "node2", 1000, 6, 1, 10);
+        node.add_channel(&edge);
         assert_eq!(node.channels.len(), 1);
-        assert_eq!(node.channels[0], "channel1");
     }
 
     #[test]
@@ -217,10 +221,6 @@ mod tests {
         graph.add_edge(edge);
 
         assert!(graph.get_edge("channel1").is_some());
-        assert!(graph
-            .get_node("node1")
-            .unwrap()
-            .channels
-            .contains(&"channel1".to_string()));
+        assert_eq!(graph.get_node("node1").unwrap().channels.len(), 1);
     }
 }

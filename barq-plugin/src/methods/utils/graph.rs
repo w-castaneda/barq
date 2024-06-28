@@ -1,18 +1,20 @@
-use clightningrpc_plugin::{error, errors::PluginError};
 use serde::Deserialize;
 
-use crate::plugin::State;
+use clightningrpc_plugin::{error, errors::PluginError};
+
 use barq_common::graph::{Edge, NetworkGraph, Node};
+
+use crate::plugin::State;
 
 /// Structure representing a channel as returned by the `listchannels` method.
 ///
 /// See https://docs.corelightning.org/reference/lightning-listchannels#return-value
 #[derive(Deserialize, Debug)]
-struct ListChannelsResponse {
+struct CLNListChannelsResponse {
     channels: Vec<ChannelInfo>,
 }
 
-/// information corresponding to a lightning channel
+/// Structure representing a channel as returned by CLN `listchannels` method.
 #[derive(Deserialize, Debug)]
 struct ChannelInfo {
     source: String,
@@ -27,7 +29,7 @@ struct ChannelInfo {
 /// Function to build the network graph using the plugin state.
 pub fn build_network_graph(state: &State) -> Result<NetworkGraph, PluginError> {
     // Call the `listchannels` method to get the network information
-    let response: ListChannelsResponse = state
+    let response: CLNListChannelsResponse = state
         .call("listchannels", serde_json::json!({}))
         .map_err(|err| error!("Error calling `listchannels`: {err}"))?;
 
@@ -69,11 +71,13 @@ mod tests {
 
     #[test]
     fn test_build_network_graph() {
-        // TODO: Implement proper tests when integrating with a real or mocked plugin state.
+        // TODO: Implement proper tests when integrating with a real or mocked plugin
+        // state.
 
         let plugin: Plugin<State> = Plugin::new(State::new(), false);
 
-        // Call the function (this won't actually work without a proper plugin state setup)
+        // Call the function (this won't actually work without a proper plugin state
+        // setup)
         match build_network_graph(&plugin.state) {
             Ok(graph) => {
                 // Check the graph contents

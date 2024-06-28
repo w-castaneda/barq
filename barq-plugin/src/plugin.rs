@@ -1,20 +1,19 @@
 //! Barq Plugin implementation
 use std::sync::Arc;
 
-use json::Value;
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json as json;
-use std::collections::HashMap;
+use serde_json::Value;
 
 use clightningrpc::LightningRPC;
 use clightningrpc_plugin::{commands::RPCCommand, errors::PluginError, plugin::Plugin};
 use clightningrpc_plugin_macros::{plugin, rpc_method};
 
-use crate::methods;
 use barq_common::{
-    algorithms::{dijkstra::Dijkstra, direct::Direct},
+    algorithms::direct::Direct,
     strategy::{Router, Strategy},
 };
+
+use crate::methods;
 
 /// Barq Plugin State
 ///
@@ -38,7 +37,7 @@ impl State {
 
     /// Get Barq router
     pub(crate) fn router(&self) -> Arc<Router> {
-        self.router.clone().unwrap()
+        self.router.clone().expect("Failed to get router")
     }
 
     /// A convenience method to call a CLN RPC method
@@ -75,19 +74,18 @@ pub fn build_plugin() -> anyhow::Result<Plugin<State>> {
 }
 
 /// This method is called when the plugin is initialized
-fn on_init(plugin: &mut Plugin<State>) -> json::Value {
+fn on_init(plugin: &mut Plugin<State>) -> Value {
     let config = plugin.configuration.clone().unwrap();
     let rpc_file = format!("{}/{}", config.lightning_dir, config.rpc_file);
 
-    let mut strategies: Vec<Box<dyn Strategy>> = Vec::new();
-    strategies.push(Box::new(Direct));
-    strategies.push(Box::new(Dijkstra));
+    let strategies: Vec<Box<dyn Strategy>> = vec![Box::new(Direct)];
 
+    #[allow(clippy::arc_with_non_send_sync)]
     let shared_router = Arc::new(Router::new(strategies));
     plugin.state.router = Some(shared_router);
     plugin.state.cln_rpc_path = Some(rpc_file);
 
-    json::json!({})
+    serde_json::json!({})
 }
 
 #[rpc_method(rpc_name = "barqpay", description = "Execute a payment using Barq")]

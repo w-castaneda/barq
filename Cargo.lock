@@ -24,6 +24,7 @@ dependencies = [
  "anyhow",
  "barq-common",
  "clightningrpc",
+ "clightningrpc-common 0.3.0-beta.4 (git+https://github.com/laanwj/cln4rust.git)",
  "clightningrpc-plugin 0.3.0-beta.8 (git+https://github.com/laanwj/cln4rust.git)",
  "clightningrpc-plugin-macros",
  "log",
@@ -36,7 +37,7 @@ name = "clightningrpc"
 version = "0.3.0-beta.8"
 source = "git+https://github.com/laanwj/cln4rust.git#c0744fa90dd5fc711198e55e80e06d549e9f94b5"
 dependencies = [
- "clightningrpc-common",
+ "clightningrpc-common 0.3.0-beta.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
 ]
@@ -52,12 +53,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "clightningrpc-common"
+version = "0.3.0-beta.4"
+source = "git+https://github.com/laanwj/cln4rust.git#c0744fa90dd5fc711198e55e80e06d549e9f94b5"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "clightningrpc-plugin"
 version = "0.3.0-beta.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9807dd1f895fadfc9fe8e9f355cabbccf994d4c7b0e3a921726679faa3e2713d"
 dependencies = [
- "clightningrpc-common",
+ "clightningrpc-common 0.3.0-beta.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
 ]
@@ -131,9 +141,9 @@ checksum = "a4a3c5d81e3af35bb269378a933889f7f45c884bdf820a9c268711035430f3f7"
 
 [[package]]
 name = "log"
-version = "0.4.21"
+version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
+checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "petgraph"
@@ -191,9 +201,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.118"
+version = "1.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d947f6b3163d8857ea16c4fa0dd4840d52f3041039a85decd46867eb1abef2e4"
+checksum = "e8eddb61f0697cc3989c5d64b452f5488e2b8a60fd7d5076a3045076ffef8cb0"
 dependencies = [
  "itoa",
  "ryu",

@@ -11,14 +11,27 @@ Barq is organized into multiple crates:
 | `barq-common` | Contains core logic and implements the strategy design pattern |
 | `barq-plugin` | Plugin with RPC commands for interacting with Core Lightning   |
 
+## Strategy Design Pattern
+
+The strategy design pattern is used to create a flexible routing mechanism. This allows for different routing strategies to be implemented and selected at runtime, which enhances the modularity and maintainability of the codebase.
+
+Each strategy follows a common interface, making it easy to add new strategies without changing existing code for the plugin.
+
 ## Integration Testing
 
-To run integration testing we use `nix`, so after you [install nix](https://nixos.org/download), and
-then run the following commands
+To run integration tests, we use `nix`. After [installing nix](https://nixos.org/download), run the following commands:
 
-``` shell
+```shell
 nix develop
 make check
 ```
 
-or you can use `nix develop --command bash -c 'make check'`
+Alternatively, you can run:
+
+```shell
+nix develop --command bash -c 'make check'
+```
+
+## Contributions
+
+Contributions to Barq are highly appreciated. Please follow the guidelines in [`CONTRIBUTING.md`](./CONTRIBUTING.md) for details on linting, formatting, testing, and commit message conventions.

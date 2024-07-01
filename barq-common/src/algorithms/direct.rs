@@ -1,4 +1,4 @@
-use crate::strategy::{RouteInput, RouteOutput, Strategy};
+use anyhow::Result;
 
 use crate::strategy::{RouteHop, RouteInput, RouteOutput, Strategy};
 
@@ -78,8 +78,10 @@ impl Strategy for Direct {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::NetworkGraph;
-    use crate::strategy::Router;
+    use crate::{
+        graph::{Edge, NetworkGraph, Node},
+        strategy::Router,
+    };
 
     #[test]
     fn test_direct_routing() {

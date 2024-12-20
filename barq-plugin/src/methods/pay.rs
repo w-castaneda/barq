@@ -17,6 +17,56 @@ use crate::methods::graph::cln::build_cln_network_graph;
 use crate::methods::graph::p2p::build_p2p_network_graph;
 use crate::plugin::State;
 
+use crate::methods::bolt12::parse_bolt12_invoice;
+use crate::methods::offer::Offer;
+use chrono::{TimeZone, Utc};
+use std::time::{SystemTime, UNIX_EPOCH};
+use crate::methods::bolt12::{create_bolt12_invoice}; // Import the function
+
+/// Represents a Bolt12 invoice with an associated Offer.
+pub struct Bolt12Invoice {
+    pub offer: Offer,
+}
+
+impl Bolt12Invoice {
+    pub fn new(offer: Offer) -> Self {
+        Bolt12Invoice { offer }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        // Implement expiration check based on the Offer
+        if let Some(expiration_time) = self.offer.expiration {
+            let current_time = get_current_time(); // Replace with actual time logic
+            return current_time > expiration_time;
+        }
+        false
+    }
+}
+
+// Create a Bolt12 invoice from a string.
+pub fn create_bolt12_invoice(invoice_str: &str) -> Result<Bolt12Invoice, String> {
+    // Parse the Bolt12 invoice string and create an Offer
+    let offer = parse_bolt12_invoice(invoice_str)?;
+    Ok(Bolt12Invoice::new(offer))
+}
+
+// function that processes a Bolt12 invoice
+pub fn process_bolt12_invoice(invoice_str: &str) -> Result<(), String> {
+    let invoice = create_bolt12_invoice(invoice_str)?;
+    let current_time = get_current_time(); // Call the function to get the current time
+
+    // Now you can use current_time as an integer representing the time in seconds
+    if invoice.offer.expiration < current_time {
+        return Err("Invoice is expired.".to_string());
+    }
+
+    if invoice.is_expired() {
+        return Err("The invoice has expired".to_string());
+    }
+
+    Ok(())
+}
+
 /// Response from `sendpay` RPC command of Core Lightning
 ///
 /// See: https://docs.corelightning.org/reference/lightning-sendpay#return-value
@@ -214,3 +264,4 @@ pub fn barq_pay(
     };
     Ok(json::to_value(response)?)
 }
+

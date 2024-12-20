@@ -13,6 +13,8 @@ use clightningrpc_plugin_macros::{plugin, rpc_method};
 
 use crate::methods;
 
+use crate::methods::pay::{process_bolt12_invoice, Bolt12Invoice};
+
 /// Barq Plugin State
 ///
 /// This struct holds the router and CLN RPC path
@@ -103,4 +105,19 @@ pub fn barq_pay(plugin: &mut Plugin<State>, requet: Value) -> Result<Value, Plug
 )]
 fn barq_route_info(plugin: &mut Plugin<State>, request: Value) -> Result<Value, PluginError> {
     methods::route_info::barq_route_info(plugin, request)
+}
+
+// Function for creating and processing a Bolt12 invoice
+pub fn handle_bolt12_invoice(invoice_str: &str) -> Result<Bolt12Invoice, String> {
+    // Handle the incoming Bolt12 invoice string
+    let invoice = process_bolt12_invoice(invoice_str)?;
+    Ok(invoice)
+}
+
+pub fn create_bolt12_invoice(amount: u64, description: String) -> Result<Bolt12Invoice, Error> {
+    // Create the Bolt12Invoice
+    let invoice = Bolt12Invoice::new(amount, description);
+
+    // Return the result with the invoice wrapped in Ok()
+    Ok(invoice)
 }
